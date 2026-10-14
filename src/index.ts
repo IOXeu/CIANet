@@ -1,225 +1,259 @@
 // =====================================================
-// CIANet — Área administrativa de licenças
+// CIANet — API principal
 // =====================================================
 
 import { respostaErro, respostaSucesso } from "./db";
+import { cadastrarUsuario, entrarUsuario } from "./auth";
+import {
+  buscarEmpresa,
+  cadastrarEmpresa,
+  listarEmpresas,
+} from "./empresas";
+import {
+  buscarServico,
+  cadastrarServico,
+  listarServicosDaEmpresa,
+} from "./servicos";
+import {
+  atualizarStatusAgendamento,
+  criarAgendamento,
+  listarAgendamentosDaEmpresa,
+  listarAgendamentosDoCliente,
+} from "./agendamentos";
+import {
+  criarAvaliacao,
+  listarAvaliacoesDaEmpresa,
+  obterMediaAvaliacoes,
+} from "./avaliacoes";
+import { ativarLicenca, validarLicenca } from "./licencas";
+import {
+  alterarStatusLicenca,
+  criarLicenca,
+  desativarInstalacao,
+  listarInstalacoesDaLicenca,
+  listarLicencas,
+  validarTokenAdmin,
+} from "./admin";
 
-interface DadosNovaLicenca {
-  cliente_nome?: string;
-  cliente_email?: string;
-  plano_instalacoes?: number;
-  data_expiracao?: string;
+export interface Env {
+  DB: D1Database;
+  ADMIN_TOKEN?: string;
 }
 
-function gerarChaveLicenca(): string {
-  const caracteres = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let chave = "CIANET-";
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    const url = new URL(request.url);
+    const caminho = url.pathname;
+    const metodo = request.method;
 
-  for (let i = 0; i < 4; i++) {
-    let bloco = "";
+    const partes = caminho.split("/").filter((parte) => parte !== "");
 
-    for (let j = 0; j < 4; j++) {
-      const indice = Math.floor(Math.random() * caracteres.length);
-      bloco += caracteres[indice];
+    try {
+      // =====================================================
+      // ROTA INICIAL
+      // =====================================================
+
+      if (caminho === "/" && metodo === "GET") {
+        return respostaSucesso({
+          nome: "CIANet API",
+          status: "online",
+          versao: "1.0.0",
+        });
+      }
+
+      // =====================================================
+      // LICENÇAS — CLIENTE
+      // =====================================================
+
+      if (caminho === "/api/licencas/ativar" && metodo === "POST") {
+        return await ativarLicenca(env.DB, request);
+      }
+
+      if (caminho === "/api/licencas/validar" && metodo === "POST") {
+        return await validarLicenca(env.DB, request);
+      }
+
+      // =====================================================
+      // ADMINISTRAÇÃO — LICENÇAS
+      // =====================================================
+
+      const ehRotaAdmin = partes[0] === "api" && partes[1] === "admin";
+
+      if (ehRotaAdmin) {
+        const autorizado = validarTokenAdmin(request, env);
+
+        if (!autorizado) {
+          return respostaErro("Acesso administrativo não autorizado.", 401);
+        }
+
+        if (caminho === "/api/admin/licencas" && metodo === "POST") {
+          return await criarLicenca(env.DB, request);
+        }
+
+        if (caminho === "/api/admin/licencas" && metodo === "GET") {
+          return await listarLicencas(env.DB);
+        }
+
+        if (
+          partes[2] === "licencas" &&
+          partes.length === 4 &&
+          metodo === "GET"
+        ) {
+          return await listarInstalacoesDaLicenca(env.DB, partes[3]);
+        }
+
+        if (
+          partes[2] === "licencas" &&
+          partes[4] === "status" &&
+          partes.length === 5 &&
+          metodo === "PATCH"
+        ) {
+          return await alterarStatusLicenca(env.DB, partes[3], request);
+        }
+
+        if (
+          partes[2] === "instalacoes" &&
+          partes.length === 4 &&
+          metodo === "DELETE"
+        ) {
+          return await desativarInstalacao(env.DB, partes[3]);
+        }
+      }
+
+      // =====================================================
+      // USUÁRIOS
+      // =====================================================
+
+      if (caminho === "/api/usuarios/cadastro" && metodo === "POST") {
+        return await cadastrarUsuario(env.DB, request);
+      }
+
+      if (caminho === "/api/usuarios/login" && metodo === "POST") {
+        return await entrarUsuario(env.DB, request);
+      }
+
+      // =====================================================
+      // EMPRESAS
+      // =====================================================
+
+      if (caminho === "/api/empresas" && metodo === "POST") {
+        return await cadastrarEmpresa(env.DB, request);
+      }
+
+      if (caminho === "/api/empresas" && metodo === "GET") {
+        return await listarEmpresas(env.DB);
+      }
+
+      if (
+        partes[0] === "api" &&
+        partes[1] === "empresas" &&
+        partes.length === 3 &&
+        metodo === "GET"
+      ) {
+        return await buscarEmpresa(env.DB, partes[2]);
+      }
+
+      // =====================================================
+      // SERVIÇOS
+      // =====================================================
+
+      if (caminho === "/api/servicos" && metodo === "POST") {
+        return await cadastrarServico(env.DB, request);
+      }
+
+      if (
+        partes[0] === "api" &&
+        partes[1] === "empresas" &&
+        partes[3] === "servicos" &&
+        partes.length === 4 &&
+        metodo === "GET"
+      ) {
+        return await listarServicosDaEmpresa(env.DB, partes[2]);
+      }
+
+      if (
+        partes[0] === "api" &&
+        partes[1] === "servicos" &&
+        partes.length === 3 &&
+        metodo === "GET"
+      ) {
+        return await buscarServico(env.DB, partes[2]);
+      }
+
+      // =====================================================
+      // AGENDAMENTOS
+      // =====================================================
+
+      if (caminho === "/api/agendamentos" && metodo === "POST") {
+        return await criarAgendamento(env.DB, request);
+      }
+
+      if (
+        partes[0] === "api" &&
+        partes[1] === "clientes" &&
+        partes[3] === "agendamentos" &&
+        partes.length === 4 &&
+        metodo === "GET"
+      ) {
+        return await listarAgendamentosDoCliente(env.DB, partes[2]);
+      }
+
+      if (
+        partes[0] === "api" &&
+        partes[1] === "empresas" &&
+        partes[3] === "agendamentos" &&
+        partes.length === 4 &&
+        metodo === "GET"
+      ) {
+        return await listarAgendamentosDaEmpresa(env.DB, partes[2]);
+      }
+
+      if (
+        partes[0] === "api" &&
+        partes[1] === "agendamentos" &&
+        partes.length === 4 &&
+        partes[3] === "status" &&
+        metodo === "PATCH"
+      ) {
+        return await atualizarStatusAgendamento(env.DB, partes[2], request);
+      }
+
+      // =====================================================
+      // AVALIAÇÕES
+      // =====================================================
+
+      if (caminho === "/api/avaliacoes" && metodo === "POST") {
+        return await criarAvaliacao(env.DB, request);
+      }
+
+      if (
+        partes[0] === "api" &&
+        partes[1] === "empresas" &&
+        partes[3] === "avaliacoes" &&
+        partes.length === 4 &&
+        metodo === "GET"
+      ) {
+        return await listarAvaliacoesDaEmpresa(env.DB, partes[2]);
+      }
+
+      if (
+        partes[0] === "api" &&
+        partes[1] === "empresas" &&
+        partes[3] === "media-avaliacoes" &&
+        partes.length === 4 &&
+        metodo === "GET"
+      ) {
+        return await obterMediaAvaliacoes(env.DB, partes[2]);
+      }
+
+      // =====================================================
+      // ROTA NÃO ENCONTRADA
+      // =====================================================
+
+      return respostaErro("Rota não encontrada.", 404);
+    } catch (erro) {
+      console.error("Erro na API:", erro);
+      return respostaErro("Erro interno do servidor.", 500);
     }
-
-    chave += bloco;
-
-    if (i < 3) {
-      chave += "-";
-    }
-  }
-
-  return chave;
-}
-
-export function validarTokenAdmin(
-  request: Request,
-  env: { ADMIN_TOKEN?: string }
-): boolean {
-  const token = request.headers.get("Authorization");
-
-  if (!token || !env.ADMIN_TOKEN) {
-    return false;
-  }
-
-  return token === `Bearer ${env.ADMIN_TOKEN}`;
-}
-
-export async function criarLicenca(
-  db: D1Database,
-  request: Request
-): Promise<Response> {
-  const corpo = (await request.json().catch(() => null)) as DadosNovaLicenca | null;
-
-  if (!corpo?.cliente_nome || !corpo.plano_instalacoes) {
-    return respostaErro(
-      "Nome do cliente e plano de instalações são obrigatórios."
-    );
-  }
-
-  const planosValidos = [1, 3, 5, 7];
-
-  if (!planosValidos.includes(corpo.plano_instalacoes)) {
-    return respostaErro(
-      "O plano deve ser 1, 3, 5 ou 7 instalações."
-    );
-  }
-
-  const chave = gerarChaveLicenca();
-
-  const resultado = await db
-    .prepare(
-      `INSERT INTO licencas
-        (chave, cliente_nome, cliente_email, plano_instalacoes, status, data_expiracao)
-       VALUES (?1, ?2, ?3, ?4, 'ativa', ?5)`
-    )
-    .bind(
-      chave,
-      corpo.cliente_nome.trim(),
-      corpo.cliente_email?.trim() ?? null,
-      corpo.plano_instalacoes,
-      corpo.data_expiracao ?? null
-    )
-    .run();
-
-  if (!resultado.success) {
-    return respostaErro("Não foi possível criar a licença.", 500);
-  }
-
-  return respostaSucesso(
-    {
-      mensagem: "Licença criada com sucesso.",
-      licenca: {
-        chave,
-        cliente: corpo.cliente_nome,
-        plano_instalacoes: corpo.plano_instalacoes,
-        status: "ativa",
-      },
-    },
-    201
-  );
-}
-
-export async function listarLicencas(db: D1Database): Promise<Response> {
-  const resultado = await db
-    .prepare(
-      `SELECT
-        l.id,
-        l.chave,
-        l.cliente_nome,
-        l.cliente_email,
-        l.plano_instalacoes,
-        l.status,
-        l.data_compra,
-        l.data_expiracao,
-        COUNT(CASE WHEN i.status = 'ativa' THEN 1 END) AS instalacoes_ativas
-       FROM licencas l
-       LEFT JOIN instalacoes i ON i.licenca_id = l.id
-       GROUP BY l.id
-       ORDER BY l.id DESC`
-    )
-    .all();
-
-  return respostaSucesso({
-    licencas: resultado.results,
-  });
-}
-
-export async function listarInstalacoesDaLicenca(
-  db: D1Database,
-  licencaId: string
-): Promise<Response> {
-  const licenca = await db
-    .prepare(
-      `SELECT id, chave, cliente_nome, plano_instalacoes, status
-       FROM licencas
-       WHERE id = ?1`
-    )
-    .bind(licencaId)
-    .first();
-
-  if (!licenca) {
-    return respostaErro("Licença não encontrada.", 404);
-  }
-
-  const instalacoes = await db
-    .prepare(
-      `SELECT
-        id,
-        nome_computador,
-        dispositivo_id,
-        sistema_operacional,
-        versao_cianet,
-        status,
-        ativada_em,
-        ultimo_acesso
-       FROM instalacoes
-       WHERE licenca_id = ?1
-       ORDER BY id DESC`
-    )
-    .bind(licencaId)
-    .all();
-
-  return respostaSucesso({
-    licenca,
-    instalacoes: instalacoes.results,
-  });
-}
-
-export async function alterarStatusLicenca(
-  db: D1Database,
-  licencaId: string,
-  request: Request
-): Promise<Response> {
-  const corpo = (await request.json().catch(() => null)) as {
-    status?: string;
-  } | null;
-
-  const status = corpo?.status;
-
-  if (!status || !["ativa", "bloqueada", "expirada"].includes(status)) {
-    return respostaErro(
-      "Status inválido. Use ativa, bloqueada ou expirada."
-    );
-  }
-
-  const resultado = await db
-    .prepare(
-      `UPDATE licencas
-       SET status = ?1
-       WHERE id = ?2`
-    )
-    .bind(status, licencaId)
-    .run();
-
-  if (!resultado.success) {
-    return respostaErro("Não foi possível atualizar a licença.", 500);
-  }
-
-  return respostaSucesso({
-    mensagem: `Licença atualizada para ${status}.`,
-  });
-}
-
-export async function desativarInstalacao(
-  db: D1Database,
-  instalacaoId: string
-): Promise<Response> {
-  const resultado = await db
-    .prepare(
-      `UPDATE instalacoes
-       SET status = 'desativada'
-       WHERE id = ?1`
-    )
-    .bind(instalacaoId)
-    .run();
-
-  if (!resultado.success) {
-    return respostaErro("Não foi possível desativar a instalação.", 500);
-  }
-
-  return respostaSucesso({
-    mensagem: "Instalação desativada com sucesso.",
-  });
-}
+  },
+};
