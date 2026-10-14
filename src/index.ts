@@ -25,6 +25,7 @@ import {
   listarAvaliacoesDaEmpresa,
   obterMediaAvaliacoes,
 } from "./avaliacoes";
+import { ativarLicenca, validarLicenca } from "./licencas";
 
 export interface Env {
   DB: D1Database;
@@ -39,6 +40,10 @@ export default {
     const partes = caminho.split("/").filter((parte) => parte !== "");
 
     try {
+      // =====================================================
+      // ROTA INICIAL
+      // =====================================================
+
       if (caminho === "/" && metodo === "GET") {
         return respostaSucesso({
           nome: "CIANet API",
@@ -47,6 +52,22 @@ export default {
         });
       }
 
+      // =====================================================
+      // LICENÇAS — CIANet
+      // =====================================================
+
+      if (caminho === "/api/licencas/ativar" && metodo === "POST") {
+        return await ativarLicenca(env.DB, request);
+      }
+
+      if (caminho === "/api/licencas/validar" && metodo === "POST") {
+        return await validarLicenca(env.DB, request);
+      }
+
+      // =====================================================
+      // USUÁRIOS
+      // =====================================================
+
       if (caminho === "/api/usuarios/cadastro" && metodo === "POST") {
         return await cadastrarUsuario(env.DB, request);
       }
@@ -54,6 +75,10 @@ export default {
       if (caminho === "/api/usuarios/login" && metodo === "POST") {
         return await entrarUsuario(env.DB, request);
       }
+
+      // =====================================================
+      // EMPRESAS
+      // =====================================================
 
       if (caminho === "/api/empresas" && metodo === "POST") {
         return await cadastrarEmpresa(env.DB, request);
@@ -71,6 +96,10 @@ export default {
       ) {
         return await buscarEmpresa(env.DB, partes[2]);
       }
+
+      // =====================================================
+      // SERVIÇOS
+      // =====================================================
 
       if (caminho === "/api/servicos" && metodo === "POST") {
         return await cadastrarServico(env.DB, request);
@@ -94,6 +123,10 @@ export default {
       ) {
         return await buscarServico(env.DB, partes[2]);
       }
+
+      // =====================================================
+      // AGENDAMENTOS
+      // =====================================================
 
       if (caminho === "/api/agendamentos" && metodo === "POST") {
         return await criarAgendamento(env.DB, request);
@@ -129,6 +162,10 @@ export default {
         return await atualizarStatusAgendamento(env.DB, partes[2], request);
       }
 
+      // =====================================================
+      // AVALIAÇÕES
+      // =====================================================
+
       if (caminho === "/api/avaliacoes" && metodo === "POST") {
         return await criarAvaliacao(env.DB, request);
       }
@@ -152,6 +189,10 @@ export default {
       ) {
         return await obterMediaAvaliacoes(env.DB, partes[2]);
       }
+
+      // =====================================================
+      // ROTA NÃO ENCONTRADA
+      // =====================================================
 
       return respostaErro("Rota não encontrada.", 404);
     } catch (erro) {
