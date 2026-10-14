@@ -79,11 +79,11 @@ export default {
       if (
         partes[0] === "api" &&
         partes[1] === "empresas" &&
-        partes[2] === "servicos" &&
+        partes[3] === "servicos" &&
         partes.length === 4 &&
         metodo === "GET"
       ) {
-        return await listarServicosDaEmpresa(env.DB, partes[3]);
+        return await listarServicosDaEmpresa(env.DB, partes[2]);
       }
 
       if (
@@ -102,21 +102,21 @@ export default {
       if (
         partes[0] === "api" &&
         partes[1] === "clientes" &&
-        partes[2] === "agendamentos" &&
+        partes[3] === "agendamentos" &&
         partes.length === 4 &&
         metodo === "GET"
       ) {
-        return await listarAgendamentosDoCliente(env.DB, partes[3]);
+        return await listarAgendamentosDoCliente(env.DB, partes[2]);
       }
 
       if (
         partes[0] === "api" &&
         partes[1] === "empresas" &&
-        partes[2] === "agendamentos" &&
+        partes[3] === "agendamentos" &&
         partes.length === 4 &&
         metodo === "GET"
       ) {
-        return await listarAgendamentosDaEmpresa(env.DB, partes[3]);
+        return await listarAgendamentosDaEmpresa(env.DB, partes[2]);
       }
 
       if (
@@ -136,21 +136,21 @@ export default {
       if (
         partes[0] === "api" &&
         partes[1] === "empresas" &&
-        partes[2] === "avaliacoes" &&
+        partes[3] === "avaliacoes" &&
         partes.length === 4 &&
         metodo === "GET"
       ) {
-        return await listarAvaliacoesDaEmpresa(env.DB, partes[3]);
+        return await listarAvaliacoesDaEmpresa(env.DB, partes[2]);
       }
 
       if (
         partes[0] === "api" &&
         partes[1] === "empresas" &&
-        partes[2] === "media-avaliacoes" &&
+        partes[3] === "media-avaliacoes" &&
         partes.length === 4 &&
         metodo === "GET"
       ) {
-        return await obterMediaAvaliacoes(env.DB, partes[3]);
+        return await obterMediaAvaliacoes(env.DB, partes[2]);
       }
 
       return respostaErro("Rota não encontrada.", 404);
