@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "cianet",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-14",
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "cia2-db",
+      "database_id": "62cac9e7-f21a-44ee-bbd8-f2ac64c017e9"
+    }
+  ]
+}
