@@ -7,7 +7,7 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "cia2-db",
+      "database_name": "cianet-db",
       "database_id": "62cac9e7-f21a-44ee-bbd8-f2ac64c017e9"
     }
   ]
